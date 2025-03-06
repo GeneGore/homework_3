@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <cstring>
+#include <cstdint>
 //#include <utility>
 
 //Задание 3
