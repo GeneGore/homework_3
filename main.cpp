@@ -189,6 +189,8 @@ struct logging_allocator{
 
     void deallocate(T *p, std::size_t n){
 
+        (void)p;
+
         std::cout<<__PRETTY_FUNCTION__<<"[ n = "<<n<<" ]"<<std::endl;
 
         #ifdef RESERVE_MODE_ON
@@ -229,7 +231,7 @@ template <typename T>
 void checkAddresses(std::vector<std::uintptr_t> addresses){
 
     bool continious = true;
-    for(int i=0; i < addresses.size(); ++i){
+    for(size_t i=0; i < addresses.size(); ++i){
 
         std::cout<<"for address "<<std::showbase << std::hex << addresses[i] <<std::endl;
         std::cout<<std::dec<<std::endl;
@@ -249,7 +251,7 @@ void checkAddresses(std::vector<std::uintptr_t> addresses){
 
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     using NodeType  = std::_Rb_tree_node<std::pair<const int, int>>;
 
@@ -261,14 +263,14 @@ int main(int argc, char *argv[])
 
 //    auto mm = std::map<int,int>{};
 
-//    for(int i=1; i<=N_elements; ++i){
+//    for(size_t i=1; i<=N_elements; ++i){
 //        mm[i] = static_cast<int>(fact(i));
 //    }
 
 
      auto custom = CustomContainer<int, logging_allocator<int, N_reserve> >(N_reserve);
 
-    for(int i=1; i<=N_elements; ++i){
+    for(size_t i=1; i<=N_elements; ++i){
        custom.push_back(i);
     }
     std::cout<<"CustomContainer<int> vec"<<std::endl;
@@ -277,7 +279,7 @@ int main(int argc, char *argv[])
     std::vector<std::uintptr_t> addressesCustom;
 
     std::cout << "\nCollecting CUSTOM container addresses:\n";
-    for (int i=0; i < custom.size(); ++i){
+    for (size_t i=0; i < custom.size(); ++i){
         addressesCustom.push_back(reinterpret_cast<std::uintptr_t>( &custom[i] ));
         std::cout << " Custom Address: " << std::hex << addressesCustom.back() <<std::dec << " value: "<<custom[i] << '\n';
     }
@@ -314,7 +316,7 @@ int main(int argc, char *argv[])
 
 
 //    bool continious = true;
-//    for(int i=0; i < addresses.size(); ++i){
+//    for(size_t i=0; i < addresses.size(); ++i){
 
 //        std::cout<<"for address "<<std::showbase << std::hex << addresses[i] <<std::endl;
 //        std::cout<<std::dec<<std::endl;
@@ -346,4 +348,6 @@ int main(int argc, char *argv[])
                      << " Value: " << dataPtr->second
                      << " (retrieved from address " << std::hex << addr << std::dec << ")\n";
        }
+
+       return 0;
 }
