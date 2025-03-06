@@ -1,5 +1,7 @@
-#include <QCoreApplication>
 #include <iostream>
+#include <bits/stl_tree.h>
+#include <vector>
+#include <map>
 //#include <utility>
 
 //Задание 3
