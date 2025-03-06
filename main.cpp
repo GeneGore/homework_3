@@ -2,6 +2,7 @@
 #include <bits/stl_tree.h>
 #include <vector>
 #include <map>
+#include <cstring>
 //#include <utility>
 
 //Задание 3
@@ -151,7 +152,7 @@ struct logging_allocator{
 
         if(allocated >= reserved){ //если резерв превышен
 
-            void *p;
+            void *p = nullptr;
 
             if(pAllReservedMemory){
 
