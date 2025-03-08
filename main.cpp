@@ -1,11 +1,3 @@
-#include <iostream>
-#include <bits/stl_tree.h>
-#include <vector>
-#include <map>
-#include <cstring>
-#include <cstdint>
-//#include <utility>
-
 //Задание 3
 //Реализовать свой аллокатор памяти, который позволит выполнять операцию резервирования памяти.
 //Далее использовать этот аллокатор с контейнером std::map.
@@ -39,10 +31,17 @@
 //- заполнение 10 элементами от 0 до 9
 //- вывод на экран всех значений, хранящихся в контейнере
 
-#define RESERVE_MODE_ON
+#include <iostream>
+#include <bits/stl_tree.h>
+#include <vector>
+#include <map>
+#include <cstring>
+#include <cstdint>
+
+#define RESERVE_MODE_ON_
 
 template <typename T, typename Allocator = std::allocator<T>>
-class CustomContainer {
+class CustomContainer{
 public:
     using allocator_type = Allocator;
     using value_type = T;
@@ -50,21 +49,41 @@ public:
     using pointer = T*;
     using reference = T&;
 
-    explicit CustomContainer(size_t capacity) : m_capacity(capacity), m_size(0) {
+    explicit CustomContainer(size_t capacity): m_capacity(capacity), m_size(0){
         m_data = m_allocator.allocate(capacity);
     }
 
-    ~CustomContainer() {
+    ~CustomContainer(){
         m_allocator.deallocate(m_data, m_capacity);
     }
 
-    void push_back(const T& value) {
-        if (m_size >= m_capacity) throw std::out_of_range("Container is full");
+    void push_back(const T& value){
+
+        if (m_size >= m_capacity){
+
+//            throw std::out_of_range("Container is full");
+
+            size_t newCapacity = m_capacity * 2;
+            pointer newData = m_allocator.allocate(newCapacity);
+
+            for (size_t i = 0; i < m_size; ++i){
+
+//                new(&newData[i]) T(m_data[i]);
+                new(&newData[i]) T(std::move(m_data[i]));
+
+                m_data[i].~T();
+            }
+
+            m_allocator.deallocate(m_data, m_capacity);
+            m_data = newData;
+            m_capacity = newCapacity;
+        }
+
         m_data[m_size++] = value;
     }
 
     void print() const {
-        for (size_t i = 0; i < m_size; ++i) {
+        for (size_t i = 0; i < m_size; ++i){
             std::cout << m_data[i] << " ";
         }
         std::cout << std::endl;
@@ -196,7 +215,7 @@ struct logging_allocator{
         #ifdef RESERVE_MODE_ON
 
         if(pFree){
-            std::cout<<"REAL DEALLOCATE address "<<pFree<<std::endl;
+            std::cout<<"pFree DEALLOCATE address "<<pFree<<std::endl;
             std::free(pFree);
             pFree = nullptr;
         }
@@ -253,55 +272,76 @@ void checkAddresses(std::vector<std::uintptr_t> addresses){
 
 int main()
 {
-    using NodeType  = std::_Rb_tree_node<std::pair<const int, int>>;
+    constexpr int N_elements = 10;
+    constexpr int N_reserve = 10;
 
-    constexpr int N_elements = 90;
-    constexpr int N_reserve = 100;
+    //- создание экземпляра std::map<int, int>
+    //- заполнение 10 элементами, где ключ - это число от 0 до 9, а значение - факториал ключа
 
-//    auto v = std::vector<int, logging_allocator<int,N_reserve>>{};
+    auto map_1 = std::map<int,int>{};
 
-
-//    auto mm = std::map<int,int>{};
-
-//    for(size_t i=1; i<=N_elements; ++i){
-//        mm[i] = static_cast<int>(fact(i));
-//    }
-
-
-     auto custom = CustomContainer<int, logging_allocator<int, N_reserve> >(N_reserve);
-
-    for(size_t i=1; i<=N_elements; ++i){
-       custom.push_back(i);
-    }
-    std::cout<<"CustomContainer<int> vec"<<std::endl;
-    custom.print();
-//custom[10] = 66;
-    std::vector<std::uintptr_t> addressesCustom;
-
-    std::cout << "\nCollecting CUSTOM container addresses:\n";
-    for (size_t i=0; i < custom.size(); ++i){
-        addressesCustom.push_back(reinterpret_cast<std::uintptr_t>( &custom[i] ));
-        std::cout << " Custom Address: " << std::hex << addressesCustom.back() <<std::dec << " value: "<<custom[i] << '\n';
+    for(size_t i=0; i<N_elements; ++i){
+        map_1[i] = static_cast<int>(fact(i));
     }
 
-    checkAddresses<int>(addressesCustom);
-    std::cout << "\n=======================================\n";
+    //- создание экземпляра std::map<int, int> с новым аллокатором, ограниченным 10 элементами
+    //- заполнение 10 элементами, где ключ - это число от 0 до 9, а значение - факториал ключа
+    //- вывод на экран всех значений (ключ и значение разделены пробелом) хранящихся в контейнере
 
-    auto m = std::map<
+    auto map_2 = std::map<
             int,
             int,
             std::less<int>,
             logging_allocator< std::pair<const int, int>, N_reserve>
             >{};
 
-    for(int i=1; i<=N_elements; ++i){
-        m[i] = static_cast<int>(/*fact*/(i));
+    for(int i=0; i<N_elements; ++i){
+        map_2[i] = static_cast<int>(fact(i));
     }
+
+    for (auto& p : map_2)
+        std::cout << p.first << " " << p.second << "\n";
+
+    //- создание экземпляра своего контейнера для хранения значений типа int
+    //- заполнение 10 элементами от 0 до 9
+
+    auto customContainer_1 = CustomContainer<int>(N_reserve);
+
+    for(size_t i=0; i<N_elements; ++i){
+       customContainer_1.push_back(i);
+    }
+
+//    - создание экземпляра своего контейнера для хранения значений типа int с новым аллокатором, ограниченным 10 элементами
+//    - заполнение 10 элементами от 0 до 9
+//    - вывод на экран всех значений, хранящихся в контейнере
+
+    auto customContainer_2 = CustomContainer<int, logging_allocator<int, N_reserve> >(N_reserve);
+
+    for(size_t i=0; i<N_elements; ++i){
+       customContainer_2.push_back(i);
+    }
+
+    customContainer_2.print();
+
+    ////////////////////////////////////ПРОВЕРКИ НА НЕПРЕРЫВНОСТЬ В ПАМЯТИ, ВКЛ/ВЫКЛ RESERVE_MODE_ON/////////////////////////////////////////////
 
     std::vector<std::uintptr_t> addresses;
 
+    std::cout << "\nCollecting CUSTOM container addresses:\n";
+
+    for (size_t i=0; i < customContainer_2.size(); ++i){
+        addresses.push_back(reinterpret_cast<std::uintptr_t>( &customContainer_2[i] ));
+        std::cout << " Custom Address: " << std::hex << addresses.back() <<std::dec << " value: "<<customContainer_2[i] << '\n';
+    }
+
+    checkAddresses<int>(addresses);
+    addresses.clear();
+    std::cout << "\n=======================================\n";
+
+
+    using NodeType  = std::_Rb_tree_node<std::pair<const int, int>>;
     std::cout << "\nCollecting node addresses:\n";
-    for (auto it = m.begin(); it != m.end(); ++it) {
+    for (auto it = map_2.begin(); it != map_2.end(); ++it) {
 
         auto nodePtr = reinterpret_cast<NodeType*>(it._M_node);
 
@@ -314,40 +354,18 @@ int main()
                   << std::dec << '\n';
     }
 
-
-//    bool continious = true;
-//    for(size_t i=0; i < addresses.size(); ++i){
-
-//        std::cout<<"for address "<<std::showbase << std::hex << addresses[i] <<std::endl;
-//        std::cout<<std::dec<<std::endl;
-
-//        if( (i+1) < addresses.size()){
-
-//            std::cout<<"diff " << addresses[i+1]  - addresses[i]<< " Size of Node 2: " << sizeof(NodeType)<<std::endl;
-
-//            if(addresses[i+1] != ( addresses[i] + sizeof(NodeType) ) ) {
-//                continious = false;
-//            }
-//        }
-//    }
-
-//    if(continious) std::cout<<" CONTINUOUS !!!! "<<std::endl;
-//    else std::cout<<" NOT CONTINUOUS :( "<<std::endl;
-
-
     checkAddresses<NodeType>(addresses);
 
-//    std::sort(addresses.begin(), addresses.end());
 
-    // Восстановление ключей и значений
-       for (auto addr : addresses) {
-           auto* nodePtr = reinterpret_cast<NodeType*>(addr);
-           std::pair<const int, int>* dataPtr = nodePtr->_M_valptr();
+    for (auto addr : addresses){
 
-           std::cout << "Key: " << dataPtr->first
-                     << " Value: " << dataPtr->second
-                     << " (retrieved from address " << std::hex << addr << std::dec << ")\n";
-       }
+        auto* nodePtr = reinterpret_cast<NodeType*>(addr);
+        std::pair<const int, int>* dataPtr = nodePtr->_M_valptr();
 
-       return 0;
+        std::cout << "Key: " << dataPtr->first
+                  << " Value: " << dataPtr->second
+                  << " (retrieved from address " << std::hex << addr << std::dec << ")\n";
+    }
+
+    return 0;
 }
