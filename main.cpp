@@ -38,7 +38,7 @@
 #include <cstring>
 #include <cstdint>
 
-#define RESERVE_MODE_ON_
+#define RESERVE_MODE_ON
 
 template <typename T, typename Allocator = std::allocator<T>>
 class CustomContainer{
